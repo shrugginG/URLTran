@@ -1,11 +1,12 @@
 import torch
 from sklearn.metrics import accuracy_score, f1_score
 from torch.utils.data import DataLoader
+from tqdm import tqdm
 from transformers import AutoConfig, AutoModelForSequenceClassification, BertTokenizer
 
 import data_prep
 
-model_ckpt = "URLTran-BERT"
+model_ckpt = "bak/URLTran-BERT-1"
 config = AutoConfig.from_pretrained(model_ckpt)
 config.num_labels = 2
 config.problem_type = "single_label_classification"
@@ -33,13 +34,18 @@ def train_model(train_dataset, model):
 
     epochs = 10
     for epoch in range(epochs):
-        for batch in train_loader:
+        print(f"Epoch {epoch + 1}/{epochs}")
+
+        # Add tqdm progress bar
+        progress_bar = tqdm(train_loader, desc="Training Classifier", leave=True)
+
+        for batch in progress_bar:
             optimizer.zero_grad()
             # prep data for predict step
             inputs = batch["input_ids"]
             labels = batch["label"]
-            X = inputs.to("cpu")
-            y = labels.to("cpu")
+            X = inputs.to(device)
+            y = labels.to(device)
 
             outputs = model(X, labels=y)
 
@@ -82,6 +88,6 @@ def eval_model(eval_dataset, tokenizer, model):
 
 
 if __name__ == "__main__":
-    data_path = "data/final_data.csv"
+    data_path = "data/train_urls.csv"
     dataset = data_prep.URLTranDataset(data_path, tokenizer)
     train_model(dataset, model)
