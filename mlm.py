@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import DataLoader
 from transformers import BertForMaskedLM, BertTokenizer
+from tqdm import tqdm
 
 import data_prep
 
@@ -23,7 +24,12 @@ def train(dataset, model):
 
     epochs = 2
     for epoch in range(epochs):
-        for batch in loader:
+        print(f"Epoch {epoch + 1}/{epochs}")
+
+        # Add tqdm progress bar
+        progress_bar = tqdm(loader, desc="Training", leave=True)
+
+        for batch in progress_bar:
             optimizer.zero_grad()
 
             # prep data for predict step
@@ -37,8 +43,13 @@ def train(dataset, model):
             loss.backward()
             optimizer.step()
 
-        print(f"Epoch: {epoch} Loss: {loss.item()}")
+            # Update progress bar with the current loss
+            progress_bar.set_postfix(loss=loss.item())
+
+        # Save the model after each epoch
         model.save_pretrained(f"models/URLTran-BERT-{epoch}")
+
+        print(f"Epoch: {epoch} Loss: {loss.item()}")
 
 
 def predict_mask(url, tokenizer, model):
@@ -55,7 +66,7 @@ def predict_mask(url, tokenizer, model):
 
 
 if __name__ == "__main__":
-    data_path = "data/final_data.csv"
+    data_path = "data/train_urls.csv"
     dataset = data_prep.URLTranDataset(data_path, tokenizer)
     train(dataset, model)
 
